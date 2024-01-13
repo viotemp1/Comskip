@@ -350,7 +350,8 @@ static void signal_handler (int sig)
 
 
 
-#define AUDIOBUFFER	1600000
+//#define AUDIOBUFFER	1600000
+#define AUDIOBUFFER	3200000
 
 static double base_apts = 0.0, apts, top_apts = 0.0;
 static short audio_buffer[AUDIOBUFFER];
