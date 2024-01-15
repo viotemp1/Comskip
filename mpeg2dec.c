@@ -351,7 +351,7 @@ static void signal_handler (int sig)
 
 
 //#define AUDIOBUFFER	1600000
-#define AUDIOBUFFER	3200000
+#define AUDIOBUFFER     6400000
 
 static double base_apts = 0.0, apts, top_apts = 0.0;
 static short audio_buffer[AUDIOBUFFER];
@@ -538,7 +538,7 @@ void sound_to_frames(VideoState *is, short **b, int s, int c, int format)
     old_sample_rate = is->audio_st->codecpar->sample_rate;
 
     old_base_apts = base_apts;
-    if (fabs(base_apts - (is->audio_clock - ((double)audio_samples /(double)(is->audio_st->codecpar->sample_rate))))> 0.0001)
+    if (fabs(base_apts - (is->audio_clock - ((double)audio_samples /(double)(is->audio_st->codecpar->sample_rate))))> 0.0001) {
         base_apts = (is->audio_clock - ((double)audio_samples /(double)(is->audio_st->codecpar->sample_rate)));
         if (ALIGN_AC3_PACKETS && is->audio_st->codecpar->codec_id == AV_CODEC_ID_AC3) {
                     if (   ISSAME(base_apts - old_base_apts, 0.032)
@@ -549,6 +549,8 @@ void sound_to_frames(VideoState *is, short **b, int s, int c, int format)
                         )
                         old_base_apts = base_apts; // Ignore AC3 packet jitter
             }
+    }
+
     if (old_base_apts != 0.0 && (fabs(base_apts - old_base_apts)>0.01)) {
         Debug(8, "Jump in base apts from %6.5f to %6.5f, delta=%6.5f\n",old_base_apts, base_apts, base_apts -old_base_apts);
     }
@@ -2115,6 +2117,7 @@ again:
 
 void file_close()
 {
+    //printf("vio - file_close start\n");
     is = global_video_state;
 
 //    av_freep(&ist->hwaccel_device);
@@ -2122,6 +2125,7 @@ void file_close()
 
     if (is->dec_ctx) avcodec_free_context(&is->dec_ctx);
     is->videoStream = -1;
+//    if (ist->dec_ctx) avcodec_free_context(&ist->dec_ctx);
 //    avcodec_free_context(&is->pFormatCtx->streams[is->videoStream]->codec);
 
     if (is->audio_ctx) avcodec_free_context(&is->audio_ctx);
@@ -2135,11 +2139,12 @@ void file_close()
 
     av_frame_free(&is->frame);
 
-#ifdef HARDWARE_DECODE
-    ist->hwaccel_ctx = NULL;
-#endif
+//#ifdef HARDWARE_DECODE
+//    ist->hwaccel_ctx = NULL;
+//#endif
 
     avformat_network_deinit();
+    //printf("vio - file_close end\n");
 //  global_video_state = NULL;
 };
 
@@ -2323,6 +2328,7 @@ again:
                 }
                 else
                 {
+                    //printf("vio - is->seek_pts == 0 close all start\n");
                     is->seek_req = 0;
                     file_close();
                     file_open();
@@ -2334,6 +2340,7 @@ again:
 #ifdef PROCESS_CC
                     if (output_srt || output_smi) CEW_reinit();
 #endif
+                    //printf("vio - is->seek_pts == 0 close all end\n");
                 }
             }
 nextpacket:
@@ -2601,6 +2608,8 @@ nextpacket:
 //
 // Clear EXECUTION_STATE flags to disable away mode and allow the system to idle to sleep normally.
 //
+    file_close();
+    //printf("vio - Before exit\n");
 #if (_WIN32_WINNT >= 0x0500 || _WIN32_WINDOWS >= 0x0410)
     SetThreadExecutionState(ES_CONTINUOUS);
 #endif
